@@ -28,4 +28,4 @@ Please make sure to update tests as appropriate.
 
 ## License
 
-[MIT](https://github.com/jwt218/Chroma/commit/b428903f786063c7680e17ede4aa7e3d94c60e8a#diff-c693279643b8cd5d248172d9c22cb7cf4ed163a3c98c8a3f69c2717edd3eacb7)
+[MIT](https://github.com/jwt218/Chroma/blob/main/LICENSE)
