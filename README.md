@@ -5,6 +5,14 @@ Chroma is a MATLAB package for efficient and reproducible analysis of chromatogr
 
 Download the Chroma-main repository to a desired location on your desktop. In MATLAB, add the functions directory (/Chroma-main/functions) to the environment set path. 
 
+## Directory Structure
+
+All operations in this document and the accompanying vignette files should run from the parent directory \Chroma-main. All data needed for running the examples and to reproduce data reported in the corresponding publication are stored in \Chroma-main\data. The MATLAB and corresponding Word vignette files are found in \Chroma-main\docs. 
+
+## Citing This Work
+
+If used for producing published data, please cite this work with the following reference:
+
 ## Basic Usage
 
 See corresponding vignette files in /Chroma-main/docs/vignette.m and /Chroma-main/docs/vignette_chroma.docx. All operations should be run from the parent directory (/Chroma-main).
