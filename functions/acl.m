@@ -38,10 +38,11 @@ A = p.Results.A(:);
 nc = p.Results.refcomp(:);
 t1 = p.Results.t(:);
 
-
+%{
 if min(nc) > min(t1) || max(nc) < max(t1)
     disp('ACL: component range adjusted to match available components.')
 end
+%}
 if min(nc) > min(t1)
     t1 = [min(nc) max(t1)];
 end

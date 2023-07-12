@@ -9,7 +9,8 @@ function [CPI2,CPIBE] = cpi(A,refcomp)
 %
 %   [CPI2,CPIBE] = cpi(A,refcomp) returns the CPI2 value and the original
 %   CPI value proposed by Bray & Evans (1961). 
-
+%
+%   * CPI is calculated only for available components C23 and above
 
 p = inputParser; 
 
@@ -23,10 +24,11 @@ if ~isempty(fieldnames(p.Unmatched))
    disp(p.Unmatched)
 end
 
-A = p.Results.A(:);
+Ap = p.Results.A(:);
 nc = p.Results.refcomp(:);
-evens = nc(mod(nc,2)==0);
-odds = nc(mod(nc,2)~=0);
+fnc = find(nc == 23);
+evens = nc(mod(nc(fnc:end),2)==0);
+odds = nc(mod(nc(fnc:end),2)~=0);
 
 [~,ide] = intersect(nc,evens,'stable');
 [~,ido] = intersect(nc,odds,'stable');
@@ -35,6 +37,8 @@ ido1 = ido(1:end-1);
 ido2 = ido(2:end);
 ide1 = ide(1:end-1);
 ide2 = ide(2:end);
+
+A = Ap(fnc:end);
 
 %%% Both BE1961 (CPIBE) and Marzi CPI (CPI2) calculated
 %%% Recommended to use Marzi result!

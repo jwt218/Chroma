@@ -103,7 +103,7 @@ dt = mean(diff(x));
 ci = find(x == cut);
 yc = y(ci:end); xc = x(ci:end);
 rcx = rx(ci:end); rcy = ry(ci:end);
-sep = 100;
+sep = 10;
 tf = islocalmin(yc, 'MinProminence',5,'MinSeparation',sep);
 
 yf = interp1(xc(tf),yc(tf),xc,'spline');

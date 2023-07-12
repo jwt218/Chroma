@@ -123,14 +123,17 @@ yc = y(ci:end); xc = x(ci:end);
 rcx = rx(ci:end); rcy = ry(ci:end);
 sep = 100;
 tf = islocalmin(yc, 'MinProminence',5,'MinSeparation',sep);
+tfr = islocalmin(rcy, 'MinProminence',5,'MinSeparation',sep);
 
 yf = interp1(xc(tf),yc(tf),xc,'spline');
-ysub = yc-yf; % baseline subtracted data
+ysub = yc-yf; % baseline subtracted sample
+rf = interp1(rcx(tfr),rcy(tfr),rcx,'spline');
+rsub = rcy-rf; % baseline subtracted standard
 
 %%% find peaks above threshold
 thr = smthreshold; th2 = rmthreshold;
 [~,locs] = findpeaks(ysub,'MinPeakDistance',250,'MinPeakHeight',thr);
-[~,rloc1] = findpeaks(rcy,'MinPeakHeight',th2);
+[~,rloc1] = findpeaks(rsub,'MinPeakHeight',th2);
 
 pad = p.Results.pad;
 

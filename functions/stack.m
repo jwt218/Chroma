@@ -1,9 +1,11 @@
-function [S,int] = stack(DF,varargin)
+function [S,tx,int] = stack(DF,varargin)
 
 %STACK Sum of chromatograms in DF
 %   S = stack(DF) returns the stack of all chromatograms in DF. 
 %
-%   [S,int] = stack(DF) returns a matrix of the individual chromatograms.
+%   [S,tx] = stack(DF) returns intensity and time.
+%
+%   [S,tx,int] = stack(DF) returns a matrix of the individual chromatograms.
 %
 %   S = stack(DF,'view',v) gives the option for generating a
 %   figure after the analysis. Enter v = 'yes' to view the plot or v = 'no'
@@ -55,7 +57,7 @@ if strcmp(view,'yes')
     %plot([1 4 5 6], [3 6 25 46])
     xlim(xrange);
     xlabel('Retention Time');
-    ylabel('Relative Abundance (Stack)');
+    ylabel('Relative Abundance (Normalized)');
 
 end
 
