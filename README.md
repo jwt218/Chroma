@@ -97,6 +97,7 @@ ncs = MA(:,1); % get components
 [I] = indall(D,ncs);
 disp(I)
 ```
+Additional operations for data visualization and interpretation can be found in the Chroma vignettes (\docs subdirectory). All examples are provided as basic guidelines. Outputs can be adjusted by changing various input parameters and optional arguments. All functions in Chroma include ```help``` documentation for syntax and assistance.
 
 ## Contributing
 
