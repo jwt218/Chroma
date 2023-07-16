@@ -7,11 +7,13 @@ Download the Chroma-main repository to a desired location on your desktop. In MA
 
 ## Directory Structure
 
-All operations in this document and the accompanying vignette files should run from the parent directory /Chroma-main. All data needed for running the examples and to reproduce data reported in the corresponding publication are stored in /Chroma-main/data. The MATLAB and corresponding Word vignette files are found in /Chroma-main/docs. 
+All operations in this document and the accompanying vignette files should be run from the parent directory /Chroma-main. All data needed for running the examples and to reproduce data reported in the corresponding publication are stored in /Chroma-main/data. The MATLAB and corresponding Word vignette files are found in /Chroma-main/docs. Functions are called from the /Chroma-main/functions directory (set this folder to your MATLAB environment path). 
 
 ## Citing This Work
 
 If used for producing published data, please cite this work with the following reference:
+
+pending...
 
 ## Basic Usage
 
