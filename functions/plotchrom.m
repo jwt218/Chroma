@@ -26,7 +26,7 @@ defplt = 'layer';
 defxrange = [11 25];
 defsn = 1;
 
-expplt = {'layer','stack','layout','3d1','3d2','single'};
+expplt = {'layer','stack','layout','3d1','3d2','single','bline'};
 
 p = inputParser; 
 validplt = @(x) any(validatestring(x,expplt));
@@ -169,6 +169,18 @@ elseif strcmp(plt,'3d2')
     xlabel(cb,'Intensity');
 
 elseif strcmp(plt,'single')
+    
+    ch = DF.X(sn).M;
+    x = ch(:,1); y = ch(:,2);
+    
+    clf
+    figure(1);
+    plot(x,y,'-k'); 
+    xlim(xrange); 
+    box off; grid minor;
+    xlabel('Time'); ylabel('Intensity');
+
+elseif strcmp(plt,'bline')
     
     ch = DF.X(sn).M;
     x = ch(:,1); y = ch(:,2);

@@ -6,25 +6,27 @@ function [B,R] = acl(A,refcomp,varargin)
 %   corresponding to the peak areas of A. A and refcomp must be the 
 %   same length.
 %   
-%   B = acl(A,refcomp,t) returns the ACL value of the component range
-%   defined by t. For example, if A contains the areas of components 16-33,
-%   adding the argument t, where t = [25 31], will return the ACL value of
-%   only the areas corresponding to components 25-31. If not included, t
-%   defaults to the full range of available components. 
+%   B = acl(A,refcomp,crange) returns the ACL value of the component range
+%   defined by crange. For example, if A contains the areas of components 16-33,
+%   adding the argument crange, where crange = [25 31], will return the ACL value of
+%   only the areas corresponding to components 25-31. If not included,
+%   crange defaults to the full range of available components. 
 %
-%   [B,R] = acl(A,refcomp,t) returns the ACL value in B and the adjusted
+%   [B,R] = acl(A,refcomp,crange) returns the ACL value in B and the adjusted
 %   component range used in R if the range of t is outside the available
 %   components in refcomp. The range will be automatically adjusted to fit
 %   the max range of refcomp.
+%
 
-deft = [min(refcomp) max(refcomp)];
+defcrange = [min(refcomp) max(refcomp)];
+validcrange = @(x) isnumeric(x) && length(x) <= 2;
 
 p = inputParser; 
 
 addRequired(p,'A');
 addRequired(p,'refcomp');
 
-addOptional(p,'t',deft);
+addOptional(p,'crange',defcrange,validcrange);
 
 parse(p,A,refcomp,varargin{:})
 
@@ -36,7 +38,7 @@ end
 
 A = p.Results.A(:);
 nc = p.Results.refcomp(:);
-t1 = p.Results.t(:);
+t1 = p.Results.crange(:);
 
 %{
 if min(nc) > min(t1) || max(nc) < max(t1)

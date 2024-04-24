@@ -35,7 +35,7 @@ function [MA] = chroma(DF,RM,refcomp,varargin)
 %   [11 25].
 %
 %   MA = chroma(DF,RM,refcomp,'pad',p) allows for sample peak detections
-%   outside the availabe components in RM. For example, if the reference
+%   outside the available components in RM. For example, if the reference
 %   chromatogram RM contains components in the range 16-30, adding the 
 %   argument p = [21.5 31] will tell chroma to search for a sample peak in 
 %   DF at time 21.5 and assume it is the component C31. The 'pad' argument
@@ -44,13 +44,28 @@ function [MA] = chroma(DF,RM,refcomp,varargin)
 %   p = [21.5 31; 22.3 32; 23.2 33];
 %
 %   where the left column is time and the the right column is the component
-%   number.
+%   number. If p is input as a single column matrix (i.e., p = [31 32 33]),
+%   chroma will perform a linear extrapolation to search for the retention
+%   times of the specified components.
 %
 %   MA = chroma(DF,RM,refcomp,'out',m) specifies the output data format as
 %   a table m = 'tab' or matrix m = 'mat'.
+%
+%   MA = chroma(DF,RM,refcomp,'method',meth) specifies the method used for
+%   peak integration. The options are 'gauss' (default) to fit a gaussian
+%   model, 'drop' for a drop-to-baseline approach, 'base' for a
+%   valley-to-valley integration, 'deriv2' to drop from the inflection, and
+%   'tan' for a tangential drop to baseline.
+%
+%   MA = chroma(DF,RM,refcomp,'sub',s) specifies the method for baseline 
+%   subtraction. The options are 'auto' (default), which will perform a
+%   spline interpolated baseline subtraction, and 'blank', which will
+%   perform the subtraction using data from a blank chromatogram and
+%   requires input to the additional argument 'subinput' containing an
+%   object structured by prepfiles. 
 
 
-defsmthreshold = 100;
+defsmthreshold = 5000;
 defrmthreshold = 25000;
 defcutoff = 10;
 defds = 40;
@@ -58,9 +73,14 @@ defview = 'yes';
 defxrange = [11 25];
 defpad = [];
 defout = 'tab';
+defmethod = 'gauss';
+defsub = 'auto';
+defsubinput = struct();
 
 expview = {'yes','no'};
 expout = {'tab','mat'};
+expmethod = {'gauss','drop','base','deriv2','tan'};
+expsub = {'auto','blank'};
 
 p = inputParser; 
 validDF = @(x) length(DF.X) == 1;
@@ -72,6 +92,9 @@ validview = @(x) any(validatestring(x,expview));
 validxrange = @(x) isnumeric(x) && length(x) == 2;
 validpad = @(x) isnumeric(x);
 validout = @(x) any(validatestring(x,expout));
+validmethod = @(x) any(validatestring(x,expmethod));
+validsub = @(x) any(validatestring(x,expsub));
+validsubinput = @(x) isstruct(x);
 
 addRequired(p,'DF',validDF);
 addRequired(p,'RM');
@@ -85,6 +108,9 @@ addParameter(p,'view',defview,validview)
 addParameter(p,'xrange',defxrange,validxrange)
 addParameter(p,'pad',defpad,validpad)
 addParameter(p,'out',defout,validout)
+addParameter(p,'method',defmethod,validmethod)
+addParameter(p,'sub',defsub,validsub)
+addParameter(p,'subinput',defsubinput,validsubinput)
 
 parse(p,DF,RM,refcomp,varargin{:})
 
@@ -98,9 +124,6 @@ end
 DF = p.Results.DF;
 RM = p.Results.RM;
 
-ch = DF.X.M;
-rs = RM.X.M;
-
 %%% input parameters: may need to adjust these depending on data
 smthreshold = p.Results.smthreshold; % min peak criterion (fA above baseline)
 rmthreshold = p.Results.rmthreshold; % min peak criterion (fA above baseline)
@@ -110,8 +133,14 @@ ds = p.Results.ds; % maximum distance permitted from standard (s)
 nc = p.Results.refcomp(:);
 out = p.Results.out;
 view = p.Results.view;
+pad = p.Results.pad;
+method = p.Results.method;
+sub = p.Results.sub;    
+BH = p.Results.subinput;
 
 %%% reorganize data
+ch = DF.X.M;
+rs = RM.X.M;
 x = ch(:,1); y = ch(:,2);
 rx = rs(:,1); ry = rs(:,2);
 
@@ -121,30 +150,54 @@ dt = mean(diff(x));
 ci = find(x == cut);
 yc = y(ci:end); xc = x(ci:end);
 rcx = rx(ci:end); rcy = ry(ci:end);
-sep = 100;
-tf = islocalmin(yc, 'MinProminence',5,'MinSeparation',sep);
-tfr = islocalmin(rcy, 'MinProminence',5,'MinSeparation',sep);
 
-yf = interp1(xc(tf),yc(tf),xc,'spline');
-ysub = yc-yf; % baseline subtracted sample
-rf = interp1(rcx(tfr),rcy(tfr),rcx,'spline');
-rsub = rcy-rf; % baseline subtracted standard
+if strcmp(sub,'blank') && isfield(BH,'X') == 0
+    error("Error using 'sub' argument. To use a blank chromatogram for..." + ...
+        " baseline interpretation, 'sub' must be accompanied by 'blank'.")
+    return
+end
+if strcmp(sub,'auto')
+    sep = 100;
+    tf = islocalmin(yc, 'MinProminence',3,'MinSeparation',sep);
+    tfr = islocalmin(rcy, 'MinProminence',3,'MinSeparation',sep);
+
+    yf = interp1(xc(tf),yc(tf),xc,'spline');
+    ysub = yc-yf; % baseline subtracted sample
+    rf = interp1(rcx(tfr),rcy(tfr),rcx,'spline');
+    rsub = rcy-rf; % baseline subtracted standard
+elseif strcmp(sub,'blank')
+    chb = BH.X.M;
+    xb = chb(:,1); yb = chb(:,2);
+    ycb = y(ci:end); xcb = x(ci:end);
+    ysub = yc-ycb;
+    rsub = rcy-ycb;
+end
+
+%subplot(3,1,1); plot(xc,ysub);
+%subplot(3,1,2); plot(rcx,rsub);
+%subplot(3,1,3); plot(xc,yc);
 
 %%% find peaks above threshold
 thr = smthreshold; th2 = rmthreshold;
 [~,locs] = findpeaks(ysub,'MinPeakDistance',250,'MinPeakHeight',thr);
 [~,rloc1] = findpeaks(rsub,'MinPeakHeight',th2);
 
-pad = p.Results.pad;
+szp = size(pad);
 
 if isempty(pad)
     pad = [];
     rloc = rloc1;
 end
 
-if length(pad) > 1
+if szp(2) == 2
     rloc = [rloc1; round((pad(:,1)-cut)/dt,1)];
     nc = [nc;pad(:,2)];
+end
+
+if szp(2) == 1 
+    rext = interp1(nc,rloc1,pad,'linear','extrap');
+    rloc = [rloc1; rext];
+    nc = [nc;pad];
 end
 
 %%% initialize output table [comp,rm pk time,samp pk time,area]
@@ -170,31 +223,38 @@ cloc(nani) = [];
 xoc = xc(cloc); yoc = ysub(cloc);
 rox = rcx(rloc); roy = rcy(rloc);
 
-%%% add samp pk times to output table
+%%% add sample pk times to output table
 con = co*dt;
 con(con == 0) = NaN;
 C(:,3) = con + cut;
 
 
-%%% find base of peaks (valley-to-valley)
+%%% find threshold cutoff point
 bmin = zeros([length(cloc) 1]); bmax = zeros([length(cloc) 1]);
+ddysub = gradient(gradient(ysub));
 for k = 1:length(cloc)
    i = cloc(k);
-   while i > 1 && ysub(i-1) <= ysub(i)
-       i = i - 1;
+   im = i; ip = i;
+   while ysub(im-1) >= thr || ddysub(im-1) < 0 
+       im = im - 1;
    end
-   bmin(k) = i;
-   i = cloc(k);
-   while i < length(ysub) && ysub(i+1) <= ysub(i)
-       i = i + 1;
+   while ysub(ip+1) >= thr || ddysub(ip+1) < 0 
+       ip = ip + 1;
    end
-   bmax(k) = i;
+   while im > 1 && ysub(im-1) <= ysub(im)
+       im = im - 1;
+   end
+   while ip < length(ysub) && ysub(ip+1) <= ysub(ip)
+       ip = ip + 1;
+   end
+   bmin(k) = im;
+   bmax(k) = ip;
 end
-
 
 %%% integration
 At = zeros([length(bmin) 1]);
 mpk = zeros([length(bmin) 1]);
+Pt = [];
 
 if isempty(At)
     B = zeros([length(co) 1]);
@@ -202,16 +262,86 @@ if isempty(At)
 else
 for k=1:length(bmin)
     rgx = xc(bmin(k):bmax(k));
-    rgy = ysub(bmin(k):bmax(k));
-    mpk(k,:) = max(rgy);
+    rgyk = ysub(bmin(k):bmax(k));
+    mpk(k,:) = max(rgyk);
     mpkt = mpk;
-    if min(rgy) < 0
-        rgy = rgy + abs(min(rgy));
+    if min(rgyk) < 0
+        rgyk = rgyk + abs(min(rgyk));
+    end
+    if strcmp(method,'gauss')
+        fb = fit(rgx,rgyk,'gauss2');
+        rgy = feval(fb,rgx);
+        %plot(fb,rgx,rgy)
+    elseif strcmp(method,'deriv2')
+        dsig = gradient(smooth(rgyk));
+        dsig2 = gradient(smooth(dsig));
+        %[~,mi] = min(dsig2);
+        mi = find(xc(cloc(k)) == rgx);
+        [~,pksigk] = findpeaks(dsig2); 
+        pksigb = pksigk(dsig2(pksigk) > 0);
+        if max(pksigb) < mi; mi = max(pksigb) - 1; end
+        if min(pksigb) > mi; mi = min(pksigb) + 1; end
+        psgk = pksigb(pksigb>mi); nsgk = pksigb(pksigb<mi);
+        [~,psg] = min(abs(psgk-mi));
+        [~,nsg] = min(abs(nsgk-mi));
+        pksig = [psgk(psg);nsgk(nsg)];
+        [~,irgy] = sort(rgyk(pksig),'descend');
+        pki = sort(pksig(irgy(1:2)));
+        rgy = rgyk(pki(1):pki(2));
+        rgy(1) = 0; rgy(end) = 0;
+        rgx = rgx(pki(1):pki(2));
+    elseif strcmp(method,'drop')
+        rgy = rgyk;
+        rgy(1) = 0;
+        rgy(end) = 0;
+        %plot(rgx,rgy)
+    elseif strcmp(method,'base')
+        rgy = rgyk;
+    elseif strcmp(method,'tan')
+        dsig = gradient(smooth(rgyk));
+        dsig2 = gradient(smooth(dsig));
+        %[~,mi] = min(dsig2);
+        mi = find(xc(cloc(k)) == rgx);
+        [~,pksigk] = findpeaks(dsig2); 
+        pksigb = pksigk(dsig2(pksigk) > 0);
+        if max(pksigb) < mi; mi = max(pksigb) - 1; end
+        if min(pksigb) > mi; mi = min(pksigb) + 1; end
+        psgk = pksigb(pksigb>mi); nsgk = pksigb(pksigb<mi);
+        [~,psg] = min(abs(psgk-mi));
+        [~,nsg] = min(abs(nsgk-mi));
+        pksig = [psgk(psg);nsgk(nsg)];
+        [~,irgy] = sort(rgyk(pksig),'descend');
+        pki = sort(pksig(irgy(1:2)));
+        rggy1 = rgyk(rgx >= rgx(pki(1)) & rgx <= xc(cloc(k)));
+        rggx1 = rgx(rgx >= rgx(pki(1)) & rgx <= xc(cloc(k)));
+        dgy = gradient(rggy1, dt);                           
+        [~,idx] = max(dgy); if idx == 1; idx = 2; end          
+        b = [rggx1([idx-1,idx+1]) ones(2,1)] \ rggy1([idx-1,idx+1]); 
+        tv = [-b(2)/b(1); (max(rggy1)-b(2))/b(1)]; f = [tv ones(2,1)] * b;
+        p1 = polyfit(tv,f,1); 
+        rtrx1a = (tv(1):dt:rggx1(idx-1))';
+        pv1o = roots(p1); rtrx1 = [pv1o;rtrx1a];
+        pv1 = polyval(p1,rtrx1); pv1(pv1<0) = 0;
+        rgxbld1 = [rtrx1; rggx1(idx:end)];
+        rgybld1 = [pv1;rggy1(idx:end)];
+        rggy2 = rgyk(rgx <= rgx(pki(2)) & rgx > xc(cloc(k)));
+        rggx2 = rgx(rgx <= rgx(pki(2)) & rgx > xc(cloc(k)));
+        dgy = gradient(rggy2, dt);                           
+        [~,idx] = min(dgy); if idx == 1; idx = 2; end                           
+        b = [rggx2([idx-1,idx+1]) ones(2,1)] \ rggy2([idx-1,idx+1]);    
+        tv = [-b(2)/b(1); (max(rggy2)-b(2))/b(1)]; f = [tv ones(2,1)] * b;
+        p2 = polyfit(tv,f,1); 
+        rtrx2a = (rggx2(idx+1):dt:tv(1))'; 
+        pv2o = roots(p2); rtrx2 = [rtrx2a;pv2o];
+        pv2 = polyval(p2,rtrx2); pv2(pv2<0) = 0; 
+        rgxbld2 = [rggx2(1:idx);rtrx2];
+        rgybld2 = [rggy2(1:idx);pv2];
+        rgx = [rgxbld1;rgxbld2]; rgy = [rgybld1;rgybld2];
     end
     At(k,:) = trapz(rgx,rgy);
     A = At;
+    Pt(k).X = [rgx rgy];
 end
-
     B = zeros([length(co) 1]);
     B(find(co)) = A;
     ph = zeros([length(co) 1]);
@@ -220,14 +350,14 @@ end
 
 %%% add sample peak areas to table
 
-C(:,4) = B; C(:,5) = ph;
+C(:,4) = B; C(:,5) = ph; C(:,6) = C(:,2)-C(:,3);
 D = sortrows(C,1);
 
 
 %%% format output table
 if strcmp(out,'tab')
     MA = array2table(D,'VariableNames',{'Comp','RM PK Time',...
-        'Sample PK Time','Area','Height'});
+        'Sample PK Time','Area','Height','RT Diff'});
 end
 if strcmp(out,'mat')
     MA = D;
@@ -265,9 +395,7 @@ if strcmp(view,'yes')
     plot(xc(bmax),ysub(bmax),'^k'); hold off
     xlim(xl); box on; grid minor;
     for k=1:length(bmin)
-        rgx = xc(bmin(k):bmax(k));
-        rgy = ysub(bmin(k):bmax(k));
-        patch(rgx,rgy,[0.7 0.7 0.7]);
+        patch(Pt(k).X(:,1),Pt(k).X(:,2),[0.7 0.7 0.7]);
     end
     legend('baseline subtracted response','peak (reference confirmed only)',...
         'integration peak base','box','off','Location','northwest')

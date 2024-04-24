@@ -44,8 +44,10 @@ defds = 40;
 defview = 'yes';
 defxrange = [11 25];
 defpad = [];
+defmethod = 'gauss';
 
 expview = {'yes','no'};
+expmethod = {'gauss','drop','base','deriv2','tan'};
 
 p = inputParser; 
 validsmthreshold = @(x) isnumeric(x) && isscalar(x);
@@ -55,6 +57,7 @@ validds = @(x) isnumeric(x) && isscalar(x);
 validview = @(x) any(validatestring(x,expview));
 validxrange = @(x) isnumeric(x) && length(x) == 2;
 validpad = @(x) isnumeric(x);
+validmethod = @(x) any(validatestring(x,expmethod));
 
 addRequired(p,'DF');
 addRequired(p,'RM');
@@ -67,6 +70,7 @@ addParameter(p,'ds',defds,validds)
 addParameter(p,'view',defview,validview)
 addParameter(p,'xrange',defxrange,validxrange)
 addParameter(p,'pad',defpad,validpad)
+addParameter(p,'method',defmethod,validmethod)
 
 parse(p,DF,RM,refcomp,varargin{:})
 

@@ -1,4 +1,4 @@
-function [CPI2,CPIBE] = cpi(A,refcomp)
+function [CPI2,CPIBE] = cpi(A,refcomp,varargin)
 
 %CPI Carbon Preference Index -- See Bray & Evans (1961), Marzi et al.
 %   (1993), and Herrera-Herrera et al. (2020)
@@ -10,14 +10,27 @@ function [CPI2,CPIBE] = cpi(A,refcomp)
 %   [CPI2,CPIBE] = cpi(A,refcomp) returns the CPI2 value and the original
 %   CPI value proposed by Bray & Evans (1961). 
 %
-%   * CPI is calculated only for available components C23 and above
+%   cpi(A,refcomp,crange) returns the CPI value calculated over the
+%   component range specified by crange. If not specified, CPI is
+%   calculated by default for all components C23 and higher. When crange is
+%   a single element vector, CPI is calculated over all components of crange
+%   and higher. When crange is a two element vector, CPI is calculated
+%   between the specified range of crange. 
+%
+
 
 p = inputParser; 
+
+defcrange = [];
+
+validcrange = @(x) isnumeric(x) && length(x) <= 2;
 
 addRequired(p,'A');
 addRequired(p,'refcomp');
 
-parse(p,A,refcomp)
+addOptional(p,'crange',defcrange,validcrange);
+
+parse(p,A,refcomp,varargin{:})
 
 if ~isempty(fieldnames(p.Unmatched))
    disp('Extra inputs:')
@@ -26,9 +39,18 @@ end
 
 Ap = p.Results.A(:);
 nc = p.Results.refcomp(:);
-fnc = find(nc == 23);
-evens = nc(mod(nc(fnc:end),2)==0);
-odds = nc(mod(nc(fnc:end),2)~=0);
+crange = p.Results.crange(:);
+
+if isempty(crange)
+    fnc = find(nc == 23):length(nc);
+elseif length(crange) == 2
+    fnc = find(nc == crange(1)):find(nc == crange(2));
+elseif length(crange) == 1
+    fnc = find(nc == crange):length(nc);
+end
+
+evens = nc(mod(nc(fnc),2)==0);
+odds = nc(mod(nc(fnc),2)~=0);
 
 [~,ide] = intersect(nc,evens,'stable');
 [~,ido] = intersect(nc,odds,'stable');
@@ -38,7 +60,7 @@ ido2 = ido(2:end);
 ide1 = ide(1:end-1);
 ide2 = ide(2:end);
 
-A = Ap(fnc:end);
+A = Ap(fnc);
 
 %%% Both BE1961 (CPIBE) and Marzi CPI (CPI2) calculated
 %%% Recommended to use Marzi result!

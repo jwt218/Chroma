@@ -46,20 +46,38 @@ function [T] = chromall(DF,RM,refcomp,varargin)
 %   p = [21.5 31; 22.3 32; 23.2 33];
 %
 %   where the left column is time and the the right column is the component
-%   number.
+%   number. If p is input as a single column matrix (i.e., p = [31 32 33]),
+%   chroma will perform a linear extrapolation to search for the retention
+%   times of the specified components.
 %
 %   T = chromall(DF,RM,refcomp,'out',m) specifies the output data format as
 %   a table m = 'tab' or matrix m = 'mat'.
+%
+%   T = chromall(DF,RM,refcomp,'method',meth) specifies the method used for
+%   peak integration. The options are 'gauss' (default) to fit a gaussian
+%   model, 'drop' for a drop-to-baseline approach, 'base' for a
+%   valley-to-valley integration, 'deriv2' to drop from the inflection, and
+%   'tan' for a tangential drop to baseline.
+%
+%   T = chromall(DF,RM,refcomp,'sub',s) specifies the method for baseline 
+%   subtraction. The options are 'auto' (default), which will perform a
+%   spline interpolated baseline subtraction, and 'blank', which will
+%   perform the subtraction using data from a blank chromatogram and
+%   requires input to the additional argument 'subinput' containing an
+%   object structured by prepfiles. 
 %
 %   T = chromall(DF,RM,refcomp,'nfold',dir) specifies the output directory
 %   for figures if 'view' is set to 'yes', where dir is a string containing
 %   the path and name of the directory. The function will create a
 %   directory called ./chroma_figs by default if not specified. 
+%
+
+
 
 tic
 
 defprof = 1:1:length(DF.X);
-defsmthreshold = 100;
+defsmthreshold = 2000;
 defrmthreshold = 25000;
 defcutoff = 10;
 defds = 40;
@@ -67,8 +85,13 @@ defview = 'yes';
 defxrange = [11 25];
 defpad = [];
 defnfold = [];
+defmethod = 'drop';
+defsub = 'auto';
+defblank = struct();
 
 expview = {'yes','no'};
+expmethod = {'gauss','drop','base','deriv2','tan'};
+expsub = {'auto','blank'};
 
 p = inputParser; 
 validDF = @(x) length(DF.X) > 1;
@@ -80,6 +103,9 @@ validds = @(x) isnumeric(x) && isscalar(x);
 validview = @(x) any(validatestring(x,expview));
 validxrange = @(x) isnumeric(x) && length(x) == 2;
 validpad = @(x) isnumeric(x);
+validmethod = @(x) any(validatestring(x,expmethod));
+validsub = @(x) any(validatestring(x,expsub));
+validblank = @(x) isstruct(x);
 
 addRequired(p,'DF',validDF);
 addRequired(p,'RM');
@@ -95,6 +121,9 @@ addParameter(p,'view',defview,validview)
 addParameter(p,'xrange',defxrange,validxrange)
 addParameter(p,'pad',defpad,validpad)
 addParameter(p,'nfold',defnfold)
+addParameter(p,'method',defmethod,validmethod)
+addParameter(p,'sub',defsub,validsub)
+addParameter(p,'blank',defblank,validblank)
 
 parse(p,DF,RM,refcomp,varargin{:})
 
@@ -128,6 +157,7 @@ xrange = p.Results.xrange;
 prof = p.Results.prof;
 pad = p.Results.pad;
 nfold = p.Results.nfold;
+
 
 nx = length(DF.X);
 out = 'mat';
@@ -172,13 +202,13 @@ for i = 1:nx
     if isempty(nfold)
         fold = 'chroma_figs';
         if ~exist(fold, 'dir')
-            mkdir(mkdir)
+            mkdir(fold)
         end
     end
     if ~isempty(nfold)
         fold = nfold;
         if ~exist(fold, 'dir')
-            mkdir(mkdir)
+            mkdir(fold)
         end
     end    
    
@@ -187,7 +217,7 @@ for i = 1:nx
     
     DFT.X = DF.X(i);
     [MAi] = chroma(DFT,RM,refcomp,'out',out,vo{:});
-    D = MAi(:,4); ncs = MAi(:,1);
+    D = MAi(:,4); ncs = MAi(:,1); mart = MAi(:,6);
     [Ii] = indall(D,ncs);
     tab = table2array(Ii);
 
@@ -198,6 +228,12 @@ for i = 1:nx
     [PRPH,PR,PH] = prph(DFT,RM,refcomp,vo{:});
     saveas(f1b,sprintf('./%s/prph_%s.png',fold,fno{i}));
 
+    f1c = figure('visible','off');
+    f1c.Position = [700 450 725 530];
+    plot(ncs,mart,'+k');
+    xlabel('Component'); ylabel('RT_{RM} - RT_{Sample}');
+    saveas(f1c,sprintf('./%s/rtdiff_%s.png',fold,fno{i}));
+    
     aasi(:,i) = MAi(:,4);
     c17 = D(ncs == 17); c18 = D(ncs == 18);
     pc17 = PR/c17; pc18 = PH/c18;
@@ -228,9 +264,9 @@ for i = 1:nx
     cpis2(i,:) = tab(1);
     cpibes(i,:) = tab(2);
     paqs(i,:) = tab(3);
-    [acls1(i,:),R1] = acl(D,ncs,'t',cls1);
-    [acls2(i,:),R2] = acl(D,ncs,'t',cls2);
-    [acls3(i,:),~] = acl(D,ncs,'t',cls3);
+    [acls1(i,:),R1] = acl(D,ncs,'crange',cls1);
+    [acls2(i,:),R2] = acl(D,ncs,'crange',cls2);
+    [acls3(i,:),~] = acl(D,ncs,'crange',cls3);
     cls1 = R1; cls2 = R2; 
     tars(i,:) = tab(5);
     salks(i,:) = tab(6);
