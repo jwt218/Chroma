@@ -38,14 +38,15 @@ refcomp = 16:30;    % component numbers for RM
 pad = [21.56 31; 22.32 32; 23.20 33];   % look for additional components
 ds = 40; % reference detection window
 view = 'yes';   % plotting option
-smth = 100;  % minimum sample peak threshold
+smth = 3000;  % minimum sample peak threshold
 rmth = 25000;    % minimum standard peak threshold
 xrange = [11 25];   % plotting xlim
 out = 'tab';    % output data format
 cutoff = 10;    % start time for analysis
+meth = 'drop'; % method for integration ('drop','gauss','deriv2', 'tan', or 'base')
 
 [MA] = chroma(DF,RM,refcomp,'pad',pad,'ds',ds,'view',view,'smthreshold',...
-    smth,'rmthreshold',rmth,'xrange',xrange,'out',out,'cutoff',cutoff);
+    smth,'rmthreshold',rmth,'xrange',xrange,'out',out,'cutoff',cutoff,'method',meth);
 disp(MA)
 ```
 
@@ -61,10 +62,11 @@ refcomp = 16:30; % define component range for standards
 padB4 = [21.56 31; 22.32 32; 23.20 33]; % define the extra components
 ds = 100; % define the reference detection window
 view = 'yes'; % output figures to directory
+meth = 'base';
 
 % run chroma for all samples (chromall) 
 % *this will take a few minutes if view = 'yes'
-[CGT] = chromall(CG,B4,refcomp,'prof',cgprof,'ds',ds,'rmthreshold',2.5e4,'pad',padB4,'nfold','figs/CG','view',view);
+[CGT] = chromall(CG,B4,refcomp,'prof',cgprof,'ds',ds,'rmthreshold',2.5e4,'pad',padB4,'nfold','figs/CG','view',view,'method',meth);
 ```
 
 Compare peaks of two analyses using "pkcomp".
