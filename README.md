@@ -1,5 +1,5 @@
 # Chroma
-Chroma is a MATLAB package for efficient and reproducible analysis of chromatogram data. 
+Chroma is a MATLAB package for efficient and reproducible analysis of chromatogram data. Additional documentation can be found in the /docs folder and the corresponding publication in Computers and Geosciences (doi).
 
 ## Installation
 
