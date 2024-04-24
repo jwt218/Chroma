@@ -23,17 +23,19 @@ disp(MA)
 % -> (adjust these to see how they affect the output)
 
 refcomp = 16:30;    % component numbers for RM
-pad = [21.56 31; 22.32 32; 23.20 33];   % look for additional components
+pad = [21.55 31; 22.32 32; 23.20 33];   % look for additional components
 ds = 40; % reference detection window
 view = 'yes';   % plotting option
-smth = 100;  % minimum sample peak threshold
+smth = 3000;  % minimum sample peak threshold
 rmth = 25000;    % minimum standard peak threshold
 xrange = [11 25];   % plotting xlim
 out = 'tab';    % output data format
 cutoff = 10;    % start time for analysis
+meth = 'drop'; % method for integration ('drop','gauss','deriv2', 'tan', or 'base')
 
 [MA] = chroma(DF,RM,refcomp,'pad',pad,'ds',ds,'view',view,'smthreshold',...
-    smth,'rmthreshold',rmth,'xrange',xrange,'out',out,'cutoff',cutoff);
+    smth,'rmthreshold',rmth,'xrange',xrange,'out',out,'cutoff',cutoff,...
+    'method',meth);
 disp(MA)
 
 %%% 4. Run chromall <======================================================
@@ -65,16 +67,17 @@ padA6_1 = [21.87 31; 22.65 32; 23.57 33];
 padA6_2 = [21.70 31; 22.54 32; 23.45 33];
 padA6_3 = [22.29 31; 23.18 32; 24.20 33];
 ds = 100; % define reference detection window (pts)
-view = 'no'; % output figures to directory
+view = 'yes'; % output figures to directory
+meth = 'base';
 
 % -> run chroma for all samples (chromall) 
 % -> *this will take a few minutes if view = 'yes'
-[CGT] = chromall(CG,B4,refcomp,'prof',cgprof,'ds',ds,'rmthreshold',2.5e4,'pad',padB4,'nfold','figs/CG','view',view);
-[HGZT] = chromall(HGZ,A6,refcomp,'prof',hgzprof,'ds',ds,'rmthreshold',6e4,'pad',padA6_2,'nfold','figs/HGZ','view',view);
-[LJMT] = chromall(LJM,A6,refcomp,'prof',ljmprof,'ds',ds,'rmthreshold',6e4,'pad',padA6_1,'nfold','figs/LJM','view',view);
-[QGQT] = chromall(QGQ,A6,refcomp,'prof',qgqprof,'ds',ds,'rmthreshold',6e4,'pad',padA6_1,'nfold','figs/QGQ','view',view);
-[WSST] = chromall(WSS,A6,refcomp,'prof',wssprof,'ds',ds,'rmthreshold',6e4,'pad',padA6_1,'nfold','figs/WSS','view',view);
-[XCGT] = chromall(XCG,A6_2,refcomp,'prof',xcgprof,'ds',ds,'rmthreshold',6e4,'pad',padA6_3,'nfold','figs/XCG','view',view);
+[CGT] = chromall(CG,B4,refcomp,'prof',cgprof,'ds',ds,'rmthreshold',2.5e4,'pad',padB4,'nfold','figs/CG','view',view,'method',meth);
+[HGZT] = chromall(HGZ,A6,refcomp,'prof',hgzprof,'ds',ds,'rmthreshold',6e4,'pad',padA6_2,'nfold','figs/HGZ','view',view,'method',meth);
+[LJMT] = chromall(LJM,A6,refcomp,'prof',ljmprof,'ds',ds,'rmthreshold',6e4,'pad',padA6_1,'nfold','figs/LJM','view',view,'method',meth);
+[QGQT] = chromall(QGQ,A6,refcomp,'prof',qgqprof,'ds',ds,'rmthreshold',6e4,'pad',padA6_1,'nfold','figs/QGQ','view',view,'method',meth);
+[WSST] = chromall(WSS,A6,refcomp,'prof',wssprof,'ds',ds,'rmthreshold',6e4,'pad',padA6_1,'nfold','figs/WSS','view',view,'method',meth);
+[XCGT] = chromall(XCG,A6_2,refcomp,'prof',xcgprof,'ds',ds,'rmthreshold',6e4,'pad',padA6_3,'nfold','figs/XCG','view',view,'method',meth);
 
 
 % -> Check the newly created ./figs folder for the output figures.
@@ -87,7 +90,7 @@ RM1 = prepfiles('./data/A6_HGZ_LJM_QGQ_WSS.xlsx','headerrow',2);
 RM2 = prepfiles('./data/B4_CG.xlsx','headerrow',2); 
 
 RM2.X.M(:,2) = RM2.X.M(:,2)*2; 
-% -> changing reference intensity for peak threshold
+% -> changing reference intensity to reach peak threshold 
 
 refcomp = 16:30;   
 plt = 'yes';
