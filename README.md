@@ -11,9 +11,9 @@ All operations in this document and the accompanying vignette files should be ru
 
 ## Citing This Work
 
-If used for producing published data, please cite this work with the following reference:
+If used for generating published data, please cite this work with the following reference:
 
-pending...
+Traphagan, J. and G. Zhuang (2024). "Chroma: A MATLAB package and open-source platform for biomarker data processing and automatic index calculations." Computers & Geosciences 191: 105675.
 
 ## Basic Usage
 
